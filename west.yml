@@ -33,6 +33,8 @@ manifest:
       url-base: https://github.com/ThrowTheSwitch
     - name: armmbed
       url-base: https://github.com/ARMmbed
+    - name: thst-nordic
+      url-base: https://github.com/thst-nordic
 
   # The list of external projects for the nRF Connect SDK.
   #
