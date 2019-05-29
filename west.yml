@@ -33,6 +33,8 @@ manifest:
       url-base: https://github.com/ThrowTheSwitch
     - name: armmbed
       url-base: https://github.com/ARMmbed
+    - name: thst
+      url-base: https://github.com/thst-nordic
 
   # The list of external projects for the nRF Connect SDK.
   #
@@ -40,7 +42,8 @@ manifest:
     - name: fw-nrfconnect-zephyr
       path: zephyr
       west-commands: scripts/west-commands.yml
-      revision: pull/153/head
+      revision: 9594268e332cccfc83c79e0f631d21cc22b5f90d
+      remote: thst
     - name: fw-nrfconnect-mcuboot
       path: mcuboot
       revision: 0a5c2987365abb0417610ecb7c2c7b5fb117159b
