@@ -28,9 +28,9 @@ def check_and_store_sample(path, new_name) {
 
 pipeline {
   agent none
-  options {
-    parallelsAlwaysFailFast()
-  }
+  // options {
+  //   parallelsAlwaysFailFast()
+  // }
 
   environment {
       // ENVs for check-compliance

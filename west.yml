@@ -42,7 +42,7 @@ manifest:
     - name: fw-nrfconnect-zephyr
       path: zephyr
       west-commands: scripts/west-commands.yml
-      revision: 9594268e332cccfc83c79e0f631d21cc22b5f90d
+      revision: a004b68b5e623b55429f9f5b2b4328c9cffa10dc
       remote: thst
     - name: fw-nrfconnect-mcuboot
       path: mcuboot

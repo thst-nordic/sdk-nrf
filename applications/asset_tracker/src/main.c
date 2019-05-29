@@ -1120,7 +1120,7 @@ static void buttons_leds_init(void)
 
 void main(void)
 {
-	printk("Application started\n");
+	printk("Application started\n")
 
 	buttons_leds_init();
 	work_init();
