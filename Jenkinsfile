@@ -11,6 +11,17 @@ def getRepoURL() {
   }
 }
 
+void setBuildStatus(String message, String state) {
+  step([
+      $class: "GitHubCommitStatusSetter",
+      reposSource: [$class: "ManuallyEnteredRepositorySource", url: "${params['API_URL']}"],
+      contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "continuous-integration/jenkins/doc-build"],
+      commitShaSource: [$class: "ManuallyEnteredShaSource", sha: "${params['API_COMMIT']}"],
+      errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
+      statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]] ]
+  ]);
+}
+
 def check_and_store_sample(path, new_name) {
   script {
     if (fileExists(file_path)) {
@@ -71,21 +82,6 @@ pipeline {
         sh "west update"
       }
     }
-    stage('Rebase Target Branch') {
-      steps {
-        dir("nrf") {
-          println "CHANGE_TARGET = ${env.CHANGE_TARGET}"
-          println "BRANCH_NAME = ${env.BRANCH_NAME}"
-          println "TAG_NAME = ${env.TAG_NAME}"
-          println("NODE_NAME = ${NODE_NAME}")
-          println("GIT_COMMIT = ${GIT_COMMIT}")
-          println("GIT_BRANCH = ${GIT_BRANCH}")
-          println("GIT_LOCAL_BRANCH = ${GIT_LOCAL_BRANCH}")
-          println("GIT_URL = ${GIT_URL}")
-          sh "(git remote --verbose)"
-        }
-      }
-    }
     stage('Run compliance check') {
       steps {
         // Define a Groovy script block, which allows things like try/catch and if/else. If not, the junit command will not be run if check-compliance fails
@@ -137,44 +133,6 @@ pipeline {
       steps {
         // Create a folder to store artifacts in
         sh 'mkdir artifacts'
-
-        // Build all the samples
-        dir('zephyr') {
-          sh "source zephyr-env.sh && ./scripts/sanitycheck $SANITYCHECK_OPTIONS"
-        }
-
-        script {
-          /* Rename the nrf52 desktop samples */
-          desktop_platforms = ['nrf52840_pca20041', 'nrf52_pca20037', 'nrf52840_pca10059']
-          for(int i=0; i<desktop_platforms.size(); i++) {
-            file_path = "zephyr/sanity-out/${desktop_platforms[i]}/nrf_desktop/test/zephyr/zephyr.hex"
-            check_and_store_sample("$file_path", "nrf_desktop_${desktop_platforms[i]}.hex")
-            file_path = "zephyr/sanity-out/${desktop_platforms[i]}/nrf_desktop/test_zrelease/zephyr/zephyr.hex"
-            check_and_store_sample("$file_path", "nrf_desktop_${desktop_platforms[i]}_ZRelease.hex")
-          }
-
-          /* Rename the nrf9160 samples */
-          samples = ['spm']
-          for(int i=0; i<samples.size(); i++)
-          {
-            file_path = "zephyr/sanity-out/nrf9160_pca10090/nrf9160/${samples[i]}/test_build/zephyr/zephyr.hex"
-            check_and_store_sample("$file_path", "${samples[i]}_nrf9160_pca10090.hex")
-          }
-          ns_samples = ['lte_ble_gateway', 'at_client']
-          for(int i=0; i<ns_samples.size(); i++)
-          {
-            file_path = "zephyr/sanity-out/nrf9160_pca10090ns/nrf9160/${ns_samples[i]}/test_build/zephyr/zephyr.hex"
-            check_and_store_sample("$file_path", "${ns_samples[i]}_nrf9160_pca10090ns.hex")
-          }
-          ns_apps = ['asset_tracker']
-          for(int i=0; i<ns_apps.size(); i++)
-          {
-            file_path = "zephyr/sanity-out/nrf9160_pca10090ns/${ns_apps[i]}/test_build/zephyr/zephyr.hex"
-            check_and_store_sample("$file_path", "${ns_apps[i]}_nrf9160_pca10090ns.hex")
-          }
-
-        }
-        archiveArtifacts allowEmptyArchive: true, artifacts: 'artifacts/*.hex'
       }
     }
   }
@@ -184,6 +142,15 @@ pipeline {
       // Clean up the working space at the end (including tracked files)
       println("Skip cleanup")
       //cleanWs()
+    }
+    success {
+        setBuildStatus("Nrf CI passed", "SUCCESS");
+    }
+    aborted {
+        setBuildStatus("Nrf CI aborted", "ERROR");
+    }
+    failure {
+        setBuildStatus("Nrf CI failed, see link to downstream job in main CI", "FAILURE");
     }
   }
 }
