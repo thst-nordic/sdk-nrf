@@ -71,13 +71,21 @@ pipeline {
         sh "west update"
       }
     }
-//    stage('Rebase Target Branch') {
-//      steps {
-//        dir("nrf") {
-//          sh "git checkout ${REPO_CI_TOOLS_SHA}"
-//        }
-//      }
-//    }
+    stage('Rebase Target Branch') {
+      steps {
+        dir("nrf") {
+          println "CHANGE_TARGET = ${env.CHANGE_TARGET}"
+          println "BRANCH_NAME = ${env.BRANCH_NAME}"
+          println "TAG_NAME = ${env.TAG_NAME}"
+          println("NODE_NAME = ${NODE_NAME}")
+          println("GIT_COMMIT = ${GIT_COMMIT}")
+          println("GIT_BRANCH = ${GIT_BRANCH}")
+          println("GIT_LOCAL_BRANCH = ${GIT_LOCAL_BRANCH}")
+          println("GIT_URL = ${GIT_URL}")
+          sh "(git remote --verbose)"
+        }
+      }
+    }
     stage('Run compliance check') {
       steps {
         // Define a Groovy script block, which allows things like try/catch and if/else. If not, the junit command will not be run if check-compliance fails
