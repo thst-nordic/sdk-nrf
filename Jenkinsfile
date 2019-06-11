@@ -14,9 +14,9 @@ def getRepoURL() {
 void setBuildStatus(String message, String state) {
   step([
       $class: "GitHubCommitStatusSetter",
-      reposSource: [$class: "ManuallyEnteredRepositorySource", url: "${params['GIT_URL']}"],
+      reposSource: [$class: "ManuallyEnteredRepositorySource", url: "$GIT_URL"],
       contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "continuous-integration/jenkins/nrf-ci"],
-      commitShaSource: [$class: "ManuallyEnteredShaSource", sha: "${params['GIT_COMMIT']}"],
+      commitShaSource: [$class: "ManuallyEnteredShaSource", sha: "$GIT_COMMIT"],
       errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
       statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]] ]
   ]);
