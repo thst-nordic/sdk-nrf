@@ -21,3 +21,7 @@ nRF Connect SDK supports development with nRF9160 Cellular IoT devices.
 It contains references and code for Bluetooth Low Energy devices in the
 nRF52 Series, though development on these devices is not currently supported
 with the nRF Connect SDK.
+
+
+
+Adding a commend here to force a rebase on PR-1
