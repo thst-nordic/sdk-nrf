@@ -150,6 +150,10 @@ pipeline {
             check_and_store_sample("$file_path", "nrf_desktop_${desktop_platforms[i]}_ZRelease.hex")
           }
 
+
+
+
+
           /* Rename the nrf9160 samples */
           samples = ['spm']
           for(int i=0; i<samples.size(); i++)
