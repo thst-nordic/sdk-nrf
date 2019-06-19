@@ -22,9 +22,9 @@ def check_and_store_sample(path, new_name) {
 pipeline {
 
   parameters {
-       string(name: 'RUN_DOWNSTREAM', description: 'if true skip actual testing', defaultValue: "true")
+       string(name: 'RUN_DOWNSTREAM', description: 'if true skip actual testing', defaultValue: "false")
        string(name: 'RUN_TESTS', description: 'if true skip actual testing', defaultValue: "true")
-       string(name: 'RUN_BUILD', description: 'if true skip actual testing', defaultValue: "true")
+       string(name: 'RUN_BUILD', description: 'if true skip actual testing', defaultValue: "false")
   }
 
   agent {
@@ -205,3 +205,9 @@ pipeline {
     }
   }
 }
+
+
+
+
+
+
