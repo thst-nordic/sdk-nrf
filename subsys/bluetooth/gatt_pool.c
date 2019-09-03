@@ -414,13 +414,14 @@ int bt_gatt_pool_desc_alloc(struct bt_gatt_pool *gp,
 }
 
 int bt_gatt_pool_ccc_alloc(struct bt_gatt_pool *gp,
-			   struct _bt_gatt_ccc const *ccc)
+			   struct _bt_gatt_ccc const *ccc,
+			   u8_t perm)
 {
 	int ret;
 	struct bt_gatt_attr *attr;
 	struct bt_uuid      *uuid_gatt_ccc = BT_UUID_GATT_CCC;
 
-	if (!gp || !gp->svc.attrs || !ccc) {
+	if (!gp || !gp->svc.attrs || !ccc || !perm) {
 		LOG_ERR("Invalid attribute");
 		return -EINVAL;
 	}
@@ -436,7 +437,7 @@ int bt_gatt_pool_ccc_alloc(struct bt_gatt_pool *gp,
 	if (ret) {
 		return ret;
 	}
-	attr->perm = BT_GATT_PERM_READ | BT_GATT_PERM_WRITE;
+	attr->perm = perm;
 	attr->read = bt_gatt_attr_read_ccc;
 	attr->write = bt_gatt_attr_write_ccc;
 	ret = ccc_get((struct _bt_gatt_ccc **) &attr->user_data);

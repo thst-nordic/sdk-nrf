@@ -100,8 +100,9 @@ extern "C" {
  *  @param _gp GATT service object with dynamic attribute allocation.
  *  @param _ccc_cfg CCC descriptor configuration.
  *  @param _ccc_cb CCC descriptor callback.
+ *  @param _perm CCC descriptor permissions.
  */
-#define BT_GATT_POOL_CCC(_gp, _ccc_cfg, _ccc_cb)                               \
+#define BT_GATT_POOL_CCC(_gp, _ccc_cfg, _ccc_cb, _perm)                        \
 	do {                                                                   \
 		int _ret;                                                      \
 		const struct _bt_gatt_ccc _ccc = {                             \
@@ -109,7 +110,7 @@ extern "C" {
 		    .cfg_len = ARRAY_SIZE(_ccc_cfg),                           \
 		    .cfg_changed = _ccc_cb,                                    \
 		};                                                             \
-		_ret = bt_gatt_pool_ccc_alloc(_gp, &_ccc);                     \
+		_ret = bt_gatt_pool_ccc_alloc(_gp, &_ccc, _perm);              \
 		__ASSERT_NO_MSG(!_ret);                                        \
 		(void)_ret;                                                    \
 	} while (0)
@@ -164,11 +165,14 @@ int bt_gatt_pool_desc_alloc(struct bt_gatt_pool *gp,
  *
  *  @param gp GATT service object with dynamic attribute allocation.
  *  @param ccc CCC descriptor.
+ *  @param perm Permissions to access CCC.
+ *              Use the GATT attribute permission bit field values.
  *
  *  @return 0 or negative error code.
  */
 int bt_gatt_pool_ccc_alloc(struct bt_gatt_pool *gp,
-			   struct _bt_gatt_ccc const *ccc);
+			   struct _bt_gatt_ccc const *ccc,
+			   u8_t perm);
 
 /** @brief Free the whole dynamically created GATT service.
  *
