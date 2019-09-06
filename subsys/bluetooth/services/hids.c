@@ -767,8 +767,10 @@ hids_input_reports_register(struct bt_gatt_hids *hids_obj,
 		u8_t rperm = hids_inp_rep->perm & GATT_PERM_READ_MASK;
 		u8_t wperm;
 
-		if (rperm == 0)
+		if (rperm == 0) {
 			rperm = HIDS_GATT_PERM_DEFAULT & GATT_PERM_READ_MASK;
+		}
+
 		wperm = ((rperm & BT_GATT_PERM_READ) ?
 				BT_GATT_PERM_WRITE : 0) |
 			((rperm & BT_GATT_PERM_READ_ENCRYPT) ?
