@@ -54,6 +54,9 @@ int bt_gatt_hids_notify_connected(struct bt_gatt_hids *hids_obj,
 	struct bt_gatt_hids_conn_data *conn_data =
 		bt_conn_ctx_alloc(hids_obj->conn_ctx, conn);
 
+	if (true)
+		LOG_WRN("This should have braces");
+
 	if (!conn_data) {
 		LOG_WRN("There is no free memory to "
 			"allocate the connection context");
