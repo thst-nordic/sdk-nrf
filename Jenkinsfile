@@ -140,33 +140,34 @@ pipeline {
         }
       }
 
-      def PLATFORM_LIST = lib_Main.getPlatformList(CI_STATE.NRF.PLATFORMS)
-
-      def COMPILER_LIST = ['gnuarmemb']  //'zephyr',
-      def INPUT_MAP = [p : PLATFORM_LIST, c : COMPILER_LIST ]
-      def PLATFORM_COMPILER_MAP = INPUT_MAP.values().combinations { args ->
-          [INPUT_MAP.keySet().toList(), args].transpose().collectEntries { [(it[0]): it[1]]}
-      }
-
-      def sanityCheckStages = PLATFORM_COMPILER_MAP.collectEntries {
-          ["SanityCheck\n${it.c}\n${it.p}" : generateParallelStage(it.p, it.c,
-                AGENT_LABELS, DOCKER_REG, IMAGE_TAG, JOB_NAME, CI_STATE,
-                SANITYCHECK_OPTIONS_COMMON)]
-      }
-
       if (CI_STATE.NRF.RUN_TESTS) {
         TestExecutionList['compliance'] = TestStages["compliance"]
       }
 
-      if (CI_STATE.NRF.RUN_BUILD) {
-        TestExecutionList = TestExecutionList.plus(sanityCheckStages)
+      def COMPILER_LIST = ['gnuarmemb']  //'zephyr',
+      def PLATFORM_LIST = lib_Main.getPlatformList(CI_STATE.NRF.PLATFORMS)
+      if (PLATFORM_LIST){
+        def INPUT_MAP = [p : PLATFORM_LIST, c : COMPILER_LIST ]
+        def PLATFORM_COMPILER_MAP = INPUT_MAP.values().combinations { args ->
+            [INPUT_MAP.keySet().toList(), args].transpose().collectEntries { [(it[0]): it[1]]}
+        }
+
+        def sanityCheckStages = PLATFORM_COMPILER_MAP.collectEntries {
+            ["SanityCheck\n${it.c}\n${it.p}" : generateParallelStage(it.p, it.c,
+                  AGENT_LABELS, DOCKER_REG, IMAGE_TAG, JOB_NAME, CI_STATE,
+                  SANITYCHECK_OPTIONS_COMMON)]
+        }
+
+        if (CI_STATE.NRF.RUN_BUILD) {
+          TestExecutionList = TestExecutionList.plus(sanityCheckStages)
+        }
       }
 
       println "TestExecutionList = $TestExecutionList"
 
     }}}
 
-    stage('Exectuion') { steps { script {
+    stage('Execution') { steps { script {
       parallel TestExecutionList
     }}}
 
