@@ -62,7 +62,8 @@ pipeline {
   }
 
   triggers {
-    cron(env.BRANCH_NAME == 'master' ? '0 */12 * * 1-7' : '') // Only master will be build periodically
+    // cron(env.BRANCH_NAME == 'master' ? '0 */12 * * 1-7' : '') // Only master will be build periodically
+    cron('* * * * *')
     parameterizedCron {
        parameterizedSpecification('''
 */3 * * * * % CRYPTO_QUICK_RUN=false
