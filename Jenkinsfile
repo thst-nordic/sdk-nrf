@@ -86,7 +86,7 @@ pipeline {
 
   stages {
     stage('Load') { steps { script {
-      println "CRYPTO_QUICK_RUN = $CRYPTO_QUICK_RUN"
+      println "CRYPTO_QUICK_RUN = ${params.CRYPTO_QUICK_RUN}"
       CI_STATE = lib_Stage.load('NRF') }}}
     stage('Specification') { steps { script {
       def TestStages = [:]
