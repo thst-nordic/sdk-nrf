@@ -65,7 +65,7 @@ pipeline {
     cron(env.BRANCH_NAME == 'master' ? '0 */12 * * 1-7' : '') // Only master will be build periodically
     parameterizedCron('''
         # Separate Params with ';' and no punctionation at end of line
-        * * * * * %CRYPTO_QUICK_RUN=true
+        * * * * * % CRYPTO_QUICK_RUN=true
     ''')
 
   }
