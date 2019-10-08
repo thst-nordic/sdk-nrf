@@ -38,7 +38,6 @@ def generateParallelStage(platform, compiler, AGENT_LABELS,
           println "FULL_SANITYCHECK_CMD = " + FULL_SANITYCHECK_CMD
           sh FULL_SANITYCHECK_CMD
         }
-        cleanWs()
       }
     }
   }
@@ -135,7 +134,6 @@ pipeline {
                 }
               }
             }
-            cleanWs()
           }
         }
       }
