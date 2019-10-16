@@ -50,7 +50,7 @@ pipeline {
   parameters {
        booleanParam(name: 'RUN_DOWNSTREAM', description: 'if false skip downstream jobs', defaultValue: true)
        booleanParam(name: 'RUN_TESTS', description: 'if false skip testing', defaultValue: true)
-       booleanParam(name: 'RUN_BUILD', description: 'if false skip building', defaultValue: true)
+       booleanParam(name: 'RUN_BUILD', description: 'if false skip building', defaultValue: false)
        string(name: 'PLATFORMS', description: 'Default Platforms to test', defaultValue: 'nrf9160_pca10090 nrf52_pca10040 nrf52840_pca10056')
        string(name: 'jsonstr_CI_STATE', description: 'Default State if no upstream job', defaultValue: INPUT_STATE)
   }
@@ -100,7 +100,9 @@ pipeline {
               }
               lib_West.InitUpdate('nrf')
               lib_West.ApplyManifestUpdates(CI_STATE)
-
+              sh """
+                pip install --user -r tools/ci-tools/requirements.txt
+              """
               dir('nrf') {
                 script {
                   // If we're a pull request, compare the target branch against the current HEAD (the PR), and also report issues to the PR
