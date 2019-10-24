@@ -1,3 +1,4 @@
+DNM: test PR
 
 nRF Connect SDK: fw-nrfconnect-nrf
 ##################################
