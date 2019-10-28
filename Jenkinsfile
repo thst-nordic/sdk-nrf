@@ -81,7 +81,7 @@ pipeline {
   }
 
   stages {
-    stage('Load') { steps { script { CI_STATE = lib_Stage.load('NRF') }}}
+    stage('Loooooooooooooooooooooooooooooooooooooad') { steps { script { CI_STATE = lib_Stage.load('NRF') }}}
     stage('Specification') { steps { script {
       def TestStages = [:]
 
