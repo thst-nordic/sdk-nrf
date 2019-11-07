@@ -60,7 +60,7 @@ pipeline {
           sh "curl -s -u $GH_USERNAME:$GH_TOKEN https://api.github.com/users/${CI_STATE.ORIGIN.CHANGE_AUTHOR} | grep 'Nordic Semiconductor' -q"
         } catch (Exception e) {
           currentBuild.result = 'ABORTED'
-          // error('CI Aborted becuase PR author is not Nordic Employee')
+          error('CI Aborted becuase PR author is not Nordic Employee')
         }
       }
           // def CURL_OUT = sh script:"curl -s -u $GH_USERNAME:$GH_TOKEN https://api.github.com/users/${env.CHANGE_FORK}", returnStdout:true
