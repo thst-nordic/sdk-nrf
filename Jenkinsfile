@@ -82,6 +82,17 @@ pipeline {
 
   stages {
     stage('Load') { steps { script { CI_STATE = lib_Stage.load('NRF') }}}
+    stage('Security Check') { steps { script {
+      if ( CI_STATE.NRF.CHANGE_AUTHOR || CI_STATE.NRF.CHANGE_FORK ) {
+        try {
+          sh "curl -s -u $GH_USERNAME:$GH_TOKEN https://api.github.com/users/${CI_STATE.ORIGIN.CHANGE_AUTHOR} | grep '\"company\": \"Nordic Semiconductor\"' -q"
+          sh "curl -s -u $GH_USERNAME:$GH_TOKEN https://api.github.com/users/${CI_STATE.ORIGIN.CHANGE_FORK} | grep '\"company\": \"Nordic Semiconductor\"' -q"
+        } catch (Exception e) {
+          currentBuild.result = 'ABORTED'
+          error('CI Aborted becuase PR author is not Nordic Employee')
+        }
+      }
+    }}}
     stage('Specification') { steps { script {
       def TestStages = [:]
 
