@@ -23,6 +23,8 @@ manifest:
       # nRF Connect SDK base URL.
     - name: ncs
       url-base: https://github.com/NordicPlayground
+    - name: tejlmand
+      url-base: https://github.com/tejlmand
     - name: zephyrproject
       url-base: https://github.com/zephyrproject-rtos
     - name: throwtheswitch
@@ -36,9 +38,10 @@ manifest:
   #
   projects:
     - name: zephyr
-      repo-path: fw-nrfconnect-zephyr
+      repo-path: fw-nrfconnect-zephyr-1
       west-commands: scripts/west-commands.yml
-      revision: 9be97c63368aa5ddfb7613446794a3ec85801a49
+      revision: multi_image_tag1
+      remote: tejlmand
     - name: nffs
       revision: bc62a2fa9d98ddb5d633c932ea199bc68e10f194
       path: modules/fs/nffs
@@ -50,18 +53,19 @@ manifest:
     - name: mbedtls
       repo-path: fw-nrfconnect-mbedtls
       path: modules/crypto/mbedtls
-      revision: c3be1b52f5e56aaba6039c423478cfaf62a91622
+      revision: pull/6/head
     - name: mcuboot
       repo-path: fw-nrfconnect-mcuboot
-      revision: a631263274e7220e008138e7f26c2d35bbcb2203
+      revision: multi_image_tag1
+      remote: tejlmand
     - name: mcumgr
       repo-path: fw-nrfconnect-mcumgr
-      revision: f663988d35da559a37f263d369842dbce309d1fa
+      revision: pull/2/head
       path: modules/lib/mcumgr
     - name: tinycbor
       repo-path: fw-nrfconnect-tinycbor
       path: modules/lib/tinycbor
-      revision: 86d5ed5dd544b107d2d0882961a19c2c6cb06572
+      revision: pull/2/head
     - name: ci-tools
       path: tools/ci-tools
       remote: zephyrproject
@@ -72,7 +76,7 @@ manifest:
       revision: 30b7efa827b04d2e47840716b0372737fe7d6c92
     - name: nrfxlib
       path: nrfxlib
-      revision: 52afb8282f4369204d1096121dd31485c479196a
+      revision: pull/105/head
     - name: cmock
       path: test/cmock
       revision: c243b9a7a7b3c471023193992b46cf1bd1910450
