@@ -53,18 +53,17 @@ pipeline {
 
   stages {
     stage('Load') { steps { script { CI_STATE = lib_State.load('NRF', CI_STATE) }}}
-    stage('Security Check') { steps { script {
-      if ( CI_STATE.ORIGIN.CHANGE_AUTHOR || CI_STATE.ORIGIN.CHANGE_FORK ) {
-        try {
-          // sh "curl -s -u $GH_USERNAME:$GH_TOKEN https://api.github.com/users/${CI_STATE.ORIGIN.CHANGE_AUTHOR}"
-          sh "curl -s -u $GH_USERNAME:$GH_TOKEN https://api.github.com/users/${CI_STATE.ORIGIN.CHANGE_AUTHOR} | grep 'Nordic Semiconductor' -q"
-        } catch (Exception e) {
-          currentBuild.result = 'ABORTED'
-          error('CI Aborted becuase PR author is not Nordic Employee')
-        }
-      }
-    }}}
-    // stage('Load') { steps { script { CI_STATE = lib_Stage.load('NRF') }}}
+    // stage('Security Check') { steps { script {
+    //   if ( CI_STATE.ORIGIN.CHANGE_AUTHOR || CI_STATE.ORIGIN.CHANGE_FORK ) {
+    //     try {
+    //       // sh "curl -s -u $GH_USERNAME:$GH_TOKEN https://api.github.com/users/${CI_STATE.ORIGIN.CHANGE_AUTHOR}"
+    //       sh "curl -s -u $GH_USERNAME:$GH_TOKEN https://api.github.com/users/${CI_STATE.ORIGIN.CHANGE_AUTHOR} | grep 'Nordic Semiconductor' -q"
+    //     } catch (Exception e) {
+    //       currentBuild.result = 'ABORTED'
+    //       error('CI Aborted becuase PR author is not Nordic Employee')
+    //     }
+    //   }
+    // }}}
     stage('Specification') { steps { script {
       def TestStages = [:]
       TestStages["compliance"] = {
@@ -107,7 +106,12 @@ pipeline {
 
                   // Run the compliance check
                   try {
-                    sh "(source ../zephyr/zephyr-env.sh && ../tools/ci-tools/scripts/check_compliance.py $COMPLIANCE_ARGS --commits $COMMIT_RANGE)"
+                    sh """
+                      rm -rdf ~/.config/pip && \
+                      source ../zephyr/zephyr-env.sh && \
+                      pip install --user -r ../tools/ci-tools/requirements.txt && \
+                      ../tools/ci-tools/scripts/check_compliance.py $COMPLIANCE_ARGS --commits $COMMIT_RANGE
+                    """
                   }
                   finally {
                     junit 'compliance.xml'
