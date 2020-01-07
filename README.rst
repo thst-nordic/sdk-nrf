@@ -1,3 +1,4 @@
+adding line to make PR
 
 nRF Connect SDK: fw-nrfconnect-nrf
 ##################################
