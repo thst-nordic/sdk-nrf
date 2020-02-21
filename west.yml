@@ -29,8 +29,6 @@ manifest:
       url-base: https://github.com/ThrowTheSwitch
     - name: armmbed
       url-base: https://github.com/ARMmbed
-    - name: civetweb
-      url-base: https://github.com/civetweb
 
   # The list of external projects for the nRF Connect SDK.
   #
@@ -85,7 +83,7 @@ manifest:
       remote: armmbed
     - name: civetweb
       path: modules/lib/civetweb
-      remote: civetweb
+      remote: zephyrproject
       revision: 99129c5efc907ea613c4b73ccff07581feb58a7a
     - name: edtt
       path: tools/edtt
