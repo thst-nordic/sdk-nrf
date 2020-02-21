@@ -8,11 +8,9 @@ from pathlib import PurePath
 import subprocess
 from textwrap import dedent
 
-import packaging.version
 from west import log
 from west.commands import WestCommand
 from west.manifest import Manifest, MalformedManifest
-from west.version import __version__ as west_ver
 import yaml
 
 import ncs_west_helpers as nwh
@@ -27,14 +25,6 @@ def add_projects_arg(parser):
                         help='''projects (by name or path) to operate on;
                         defaults to all projects in the manifest which
                         are shared with the upstream manifest''')
-
-def check_west_version():
-    min_ver = '0.6.99'
-    if (packaging.version.parse(west_ver) <
-            packaging.version.parse(min_ver)):
-        log.die('this command currently requires a pre-release west '
-                f'(your west version is {west_ver}, '
-                f'but must be at least {min_ver}')
 
 def likely_merged(np, zp, nsha, zsha):
     analyzer = nwh.RepoAnalyzer(np, zp, nsha, zsha)
@@ -131,13 +121,6 @@ class NcsWestCommand(WestCommand):
                            capture_stdout=True, check=True)
         z_west_yml = cp.stdout.decode('utf-8')
         try:
-            # The topdir kwarg was added in a pre-release west, which
-            # is required to use this file. The latest stable (0.6.3)
-            # doesn't have it, so pylint is failing with a false error
-            # report here. Turn it off for now; this can be removed
-            # when west 0.7 is out.
-            #
-            # pylint: disable=unexpected-keyword-arg
             return Manifest.from_data(source_data=yaml.safe_load(z_west_yml),
                                       topdir=self.topdir)
         except MalformedManifest:
@@ -190,7 +173,6 @@ class NcsLoot(NcsWestCommand):
         return parser
 
     def do_run(self, args, unknown_args):
-        check_west_version()
         if args.files and len(args.projects) != 1:
             self.parser.error('--file used, so expected 1 project argument, '
                               f'but got: {len(args.projects)}')
@@ -282,7 +264,6 @@ class NcsCompare(NcsWestCommand):
         return parser
 
     def do_run(self, args, unknown_args):
-        check_west_version()
         self.setup_upstream_downstream(args)
 
         log.inf('Comparing your manifest-rev branches with zephyr/west.yml '
