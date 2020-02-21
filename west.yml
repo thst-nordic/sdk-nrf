@@ -57,10 +57,10 @@ manifest:
         # 'debug', etc.) are automatically provided by this import, so
         # there's no need to add a redundant west-commands: key for
         # the zephyr project.
+        #
+        # Please keep this list sorted alphabetically.
         name-whitelist:
-          - segger
-          - mbedtls
-          - tinycbor
+          - canopennode
           - ci-tools
           - civetweb
           - edtt
@@ -68,15 +68,17 @@ manifest:
           - hal_nordic
           - hal_st
           - libmetal
+          - littlefs
           - loramac-node
           - lvgl
+          - mbedtls
+          - mipi-sys-t
           - net-tools
           - nrf_hw_models
           - open-amp
           - openthread
-          - littlefs
-          - mipi-sys-t
-          - canopennode
+          - segger
+          - tinycbor
 
     # NCS repositories.
     #
@@ -92,7 +94,6 @@ manifest:
       revision: v0.0.1-ncs1
       path: modules/lib/mcumgr
     - name: nrfxlib
-      path: nrfxlib
       revision: f5f0b6eda293d3186216d8deac00986c6fe8f1a8
 
     # Other third-party repositories.
