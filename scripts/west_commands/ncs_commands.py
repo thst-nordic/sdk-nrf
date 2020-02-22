@@ -72,7 +72,7 @@ class NcsWestCommand(WestCommand):
             sha = project.sha(revision)
             project.git('cat-file -e ' + sha)
             return sha
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             return None
 
     def setup_upstream_downstream(self, args):
