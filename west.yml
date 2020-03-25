@@ -22,6 +22,8 @@ manifest:
     # NCS repositories are hosted here.
     - name: ncs
       url-base: https://github.com/NordicPlayground
+    - name: thst
+      url-base: https://github.com/thst-nordic
     # Third-party repository sources:
     - name: zephyrproject
       url-base: https://github.com/zephyrproject-rtos
@@ -46,7 +48,8 @@ manifest:
     # https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/zephyr/guides/modules.html
     - name: zephyr
       repo-path: fw-nrfconnect-zephyr
-      revision: pull/283/head
+      revision: fix-west-settings
+      remote: thst
       import:
         # In addition to the zephyr repository itself, NCS also
         # imports the contents of zephyr/west.yml at the above
