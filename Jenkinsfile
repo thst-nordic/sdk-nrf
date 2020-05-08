@@ -142,7 +142,7 @@ pipeline {
     }}}
 
     stage('Execution') { steps { script {
-      parallel TestExecutionList
+      // parallel TestExecutionList
       lib_Status.set("${currentBuild.currentResult}",  'NRF', CI_STATE)
     }}}
 
