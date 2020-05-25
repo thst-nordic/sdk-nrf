@@ -37,13 +37,21 @@ void zb_osif_nvram_init(const zb_char_t *name)
 	ARG_UNUSED(name);
 	int ret;
 
+<<<<<<< HEAD
 	ret = flash_area_open(PM_ZBOSS_NVRAM_ID, &fa);
+=======
+	ret = flash_area_open(FLASH_AREA_ID(zboss_nvram), &fa);
+>>>>>>> c76678f4... zigbee: devicetree updates
 	if (ret) {
 		LOG_ERR("Can't open ZBOSS NVRAM flash area");
 	}
 
 #ifdef ZB_PRODUCTION_CONFIG
+<<<<<<< HEAD
 	ret = flash_area_open(PM_ZBOSS_PRODUCT_CONFIG_ID, &fa_pc);
+=======
+	ret = flash_area_open(FLASH_AREA_ID(product_config), &fa_pc);
+>>>>>>> c76678f4... zigbee: devicetree updates
 	if (ret) {
 		LOG_ERR("Can't open product config flash area");
 	}
