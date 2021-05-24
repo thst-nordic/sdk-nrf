@@ -14,7 +14,7 @@
 #include <logging/log_ctrl.h>
 #include <net/lwm2m.h>
 #include <modem/nrf_modem_lib.h>
-#include <power/reboot.h>
+#include <sys/reboot.h>
 
 #include "settings.h"
 
