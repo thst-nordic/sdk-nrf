@@ -31,8 +31,12 @@ Deprecated==1.2.13
 dill==0.3.5.1
 =======
 coverage==5.4
+<<<<<<< HEAD
 cryptography==37.0.4
 >>>>>>> 273589303 (update cryptography by an absurd ammount)
+=======
+cryptography==3.4.8
+>>>>>>> 7db2f5b48 (Revert to version 3.4.8 to make it into less of a leap for the NCS teams)
 docopt==0.6.2
 docutils==0.17.1
 ecdsa==0.18.0
