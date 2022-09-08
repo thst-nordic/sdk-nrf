@@ -6,7 +6,11 @@
 #OPTIONAL
 OUT_FILE=$1
 if [ -z "$OUT_FILE" ]; then
+<<<<<<< HEAD
     OUT_FILE=nrf/scripts/requirements-ext.txt
+=======
+    OUT_FILE=test_nrf/conf/requirements-ext.txt
+>>>>>>> 5f52be2d2 (add script to fix python packages)
 fi
 echo "Writing frozen requirements to: $OUT_FILE"
 
