@@ -2,7 +2,7 @@ aenum
 bitarray
 chardet
 gitlint==0.18.0
-GitPython
+GitPython==3.1.33
 jsonschema
 milksnake
 py
