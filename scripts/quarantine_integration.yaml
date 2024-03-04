@@ -305,3 +305,9 @@
   platforms:
     - thingy91_nrf9160_ns
   comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - net.lib.azure_iot_hub.iot_hub
+  platforms:
+    - qemu_cortex_m3
+  comment: "Configurations excluded to limit resources usage in integration builds"
