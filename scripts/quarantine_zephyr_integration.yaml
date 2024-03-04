@@ -110,3 +110,11 @@
   platforms:
     - native_posix
   comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - sample.net.openthread.coprocessor
+    - sample.net.openthread.coprocessor.usb
+    - sample.openthread.coprocessor.rcp
+  platforms:
+    - nrf52840dk_nrf52840
+  comment: "Configurations excluded to limit resources usage in integration builds"
