@@ -118,3 +118,10 @@
   platforms:
     - nrf52840dk_nrf52840
   comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - sample.net.lwm2m_client.bt
+    - sample.net.lwm2m_client.wnc_m14a2a
+  platforms:
+    - nrf52840dk_nrf52840
+  comment: "Configurations excluded to limit resources usage in integration builds"
