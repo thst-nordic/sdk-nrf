@@ -11,3 +11,25 @@
   platforms:
     - native_posix
   comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - net.lwm2m.content_json
+    - net.lwm2m.content_link_format
+    - net.lwm2m.content_oma_tlv
+    - net.lwm2m.content_plain_text
+    - net.lwm2m.content_raw_cbor
+    - net.lwm2m.content_senml_cbor
+    - net.lwm2m.engine
+    - net.lwm2m.lwm2m_engine
+    - net.lwm2m.lwm2m_registry
+    - net.lwm2m.block_transfer
+  platforms:
+    - nrf9160dk_nrf9160
+    - native_posix
+  comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - net.lwm2m.interop
+  platforms:
+    - qemu_cortex_m3
+  comment: "Configurations excluded to limit resources usage in integration builds"
