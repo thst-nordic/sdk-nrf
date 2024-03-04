@@ -338,3 +338,10 @@
   platforms:
     - thingy53_nrf5340_cpuapp
   comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - nrf5340_audio.sw_codec_lc3_test
+  platforms:
+    - nrf5340_audio_dk_nrf5340_cpuapp
+    - nrf5340dk_nrf5340_cpuapp
+  comment: "Configurations excluded to limit resources usage in integration builds"
