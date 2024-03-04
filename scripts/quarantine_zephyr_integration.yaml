@@ -134,3 +134,12 @@
     - nrf9160dk_nrf9160
     - nrf9160dk_nrf9160_ns
   comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - sample.tfm.protected_storage
+    - sample.tfm.secure_partition
+    - sample.tfm_ipc
+  platforms:
+    - nrf9160dk_nrf9160_ns
+    - nrf5340dk_nrf5340_cpuapp_ns
+  comment: "Configurations excluded to limit resources usage in integration builds"
