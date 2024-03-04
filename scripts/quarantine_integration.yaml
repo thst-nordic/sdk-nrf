@@ -291,3 +291,17 @@
   platforms:
     - nrf9161dk_nrf9161_ns
   comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - sample.sensor.bme68x.i2c
+    - sample.sensor.bme68x.polling
+  platforms:
+    - thingy53_nrf5340_cpuapp_ns
+    - thingy91_nrf9160
+  comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - sample.sensor.bme68x.i2c
+  platforms:
+    - thingy91_nrf9160_ns
+  comment: "Configurations excluded to limit resources usage in integration builds"
