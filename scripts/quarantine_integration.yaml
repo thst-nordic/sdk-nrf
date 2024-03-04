@@ -332,3 +332,9 @@
   platforms:
     - thingy91_nrf9160_ns
   comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - applications.matter_weather_station.debug.no_fd
+  platforms:
+    - thingy53_nrf5340_cpuapp
+  comment: "Configurations excluded to limit resources usage in integration builds"
