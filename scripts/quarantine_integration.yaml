@@ -63,3 +63,62 @@
   platforms:
     - nrf7002dk_nrf5340_cpuapp
   comment: "To save CI-Integration time, these are part of Wi-Fi nighlty"
+
+- scenarios:
+    - sample.bluetooth.audio_unicast_server.bt_ll_sw_split
+    - sample.bluetooth.audio_unicast_client.bt_ll_sw_split
+  platforms:
+    - nrf52840dk_nrf52840
+    - nrf52dk_nrf52832
+  comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - sample.bluetooth.mesh.light_switch
+    - sample.bluetooth.mesh.light_switch.lpn
+  platforms:
+    - nrf21540dk_nrf52840
+    - nrf52840dk_nrf52840
+    - nrf52833dk_nrf52833
+  comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - sample.bluetooth.mesh.light
+    - sample.bluetooth.mesh.light_dimmer
+  platforms:
+    - nrf21540dk_nrf52840
+    - nrf52833dk_nrf52833
+    - nrf52840dk_nrf52840
+    - nrf5340dk_nrf5340_cpuapp
+    - nrf5340dk_nrf5340_cpuapp_ns
+    - thingy53_nrf5340_cpuapp
+  comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - sample.bluetooth.mesh.light.dfu
+  platforms:
+    - nrf21540dk_nrf52840
+  comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - sample.bluetooth.mesh.silvair_enocean
+  platforms:
+    - nrf21540dk_nrf52840
+    - nrf52833dk_nrf52833
+    - nrf52840dk_nrf52840
+  comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - sample.bluetooth.mesh.ble_and_mesh
+  platforms:
+    - nrf21540dk_nrf52840
+    - nrf52833dk_nrf52833
+  comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - sample.bluetooth.mesh.sensor_server
+    - sample.bluetooth.mesh.chat
+    - sample.bluetooth.mesh.sensor_client
+  platforms:
+    - nrf21540dk_nrf52840
+    - nrf52840dk_nrf52840
+  comment: "Configurations excluded to limit resources usage in integration builds"
