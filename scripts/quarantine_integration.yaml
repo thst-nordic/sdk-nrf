@@ -271,3 +271,9 @@
     - nrf5340dk_nrf5340_cpuapp
     - nrf9160dk_nrf9160
   comment: "Configurations excluded to limit resources usage in integration builds"
+
+- scenarios:
+    - sample.hw_id.device_id
+  platforms:
+    - 9160dk_nrf9160
+  comment: "Configurations excluded to limit resources usage in integration builds"
