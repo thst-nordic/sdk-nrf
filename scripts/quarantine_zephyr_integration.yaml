@@ -1,0 +1,13 @@
+# Configurations excluded to limit resources usage in CI integration builds.
+# To use with "quarantine-list" twister argument.
+
+# This configurations come from tests/samples in sdk-zephyr
+
+- scenarios:
+    - modem.backends.tty
+    - modem.modem_chat
+    - modem.modem_cmux
+    - modem.modem_ppp
+  platforms:
+    - native_posix
+  comment: "Configurations excluded to limit resources usage in integration builds"
