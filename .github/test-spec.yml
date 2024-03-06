@@ -12,6 +12,11 @@
       - "!VERSION"
       - "!ncs_version.h.in"
 
+"CI-run-zephyr-twister":
+  - "scripts/quarantine_zephyr_integration.yaml"
+  - "scripts/quarantine_zephyr.yaml"
+  # Zephyr twister is also run on manifest PR's that change sdk-zephyr.
+
 "CI-tool-test-linux":
   - "scripts/requirements*.txt"
   - "scripts/tools-versions-linux.txt"
