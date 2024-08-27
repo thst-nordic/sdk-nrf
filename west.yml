@@ -37,6 +37,8 @@ manifest:
       url-base: https://github.com/ant-nrfconnect
     - name: babblesim
       url-base: https://github.com/BabbleSim
+    - name: builder
+      url-base: https://github.com/NordicBuilder
 
   # If not otherwise specified, the projects below should be obtained
   # from the ncs remote.
@@ -58,6 +60,7 @@ manifest:
     # https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/zephyr/introduction/index.html
     # https://developer.nordicsemi.com/nRF_Connect_SDK/doc/latest/zephyr/guides/modules.html
     - name: zephyr
+      remote: builder
       repo-path: sdk-zephyr
       revision: v3.3.99-ncs1-4
       import:
