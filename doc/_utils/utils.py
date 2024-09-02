@@ -149,7 +149,9 @@ def add_announcement_banner(options: dict) -> None:
         options: html theme options.
     """
 
-    msg = ""
+    msg = "<b>Important: </b>This website will be taken offline by 2024-06-18 and replaced " \
+           "with <a href=\"https://docs.nordicsemi.com/\">docs.nordicsemi.com</a>, " \
+           "where all Nordic technical documentation is already accessible. " \
 
-    options["set_default_announcement"] = False
+    options["set_default_announcement"] = True
     options["default_announcement_message"] = msg
