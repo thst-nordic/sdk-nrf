@@ -1326,12 +1326,9 @@ psa_status_t cracen_export_key(const psa_key_attributes_t *attributes, const uin
 		/* The keys will already be in the key buffer as they got loaded their by a previous
 		 * call to cracen_get_builtin_key or cached in the memory.
 		 */
-		psa_ecc_family_t ecc_fam =
-			PSA_KEY_TYPE_ECC_GET_FAMILY(psa_get_key_type(attributes));
-		if (ecc_fam == PSA_ECC_FAMILY_TWISTED_EDWARDS ||
-		    ecc_fam == PSA_ECC_FAMILY_SECP_R1) {
+		if (PSA_KEY_TYPE_ECC_GET_FAMILY(psa_get_key_type(attributes)) ==
+		    PSA_ECC_FAMILY_TWISTED_EDWARDS) {
 			memcpy(data, key_buffer, key_buffer_size);
-			*data_length = key_buffer_size;
 			return PSA_SUCCESS;
 		}
 
