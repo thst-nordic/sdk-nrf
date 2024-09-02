@@ -4,9 +4,6 @@
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
 
-#ifndef OT_RPC_IDS_H_
-#define OT_RPC_IDS_H_
-
 /** @brief Command IDs accepted by the OpenThread over RPC client.
  */
 enum ot_rpc_cmd_client {
@@ -71,5 +68,3 @@ enum ot_rpc_cmd_server {
 	OT_RPC_CMD_MESSAGE_GET_OFFSET,
 	OT_RPC_CMD_MESSAGE_READ,
 };
-
-#endif /* OT_RPC_IDS_H_ */
