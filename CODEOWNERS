@@ -23,7 +23,7 @@
 
 # Dot folders
 /.github/                                 @nrfconnect/ncs-ci
-/.github/test-spec.yml                    @nrfconnect/ncs-test-leads
+# /.github/test-spec.yml                    @nrfconnect/ncs-test-leads
 /.vscode/                                 @kylebonnici
 
 # Applications
