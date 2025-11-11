@@ -31,6 +31,10 @@ on:
         type: string
         default: nrf/scripts/ci/license_allow_list.yaml
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   license_job:
     runs-on: ubuntu-24.04
@@ -62,13 +66,14 @@ jobs:
       working-directory: ncs
       env:
         PR_REF: ${{ github.event.pull_request.head.sha }}
+        MODULE_PATH: ${{ inputs.path }}
       run: |
         export PATH="$HOME/.local/bin:$PATH"
         export PATH="$HOME/bin:$PATH"
         west zephyr-export
         echo "ZEPHYR_BASE=$(pwd)/zephyr" >> $GITHUB_ENV
         # debug
-        ( cd ${{ inputs.path }}; echo "${{ inputs.path }}"; git log --pretty=oneline --max-count=10 )
+        ( cd "${MODULE_PATH}"; echo "${MODULE_PATH}"; git log --pretty=oneline --max-count=10 )
         ( cd nrf; echo "nrf"; git log --pretty=oneline --max-count=10 )
         ( cd zephyr; echo "zephyr"; git log --pretty=oneline --max-count=10 )
 
@@ -81,6 +86,8 @@ jobs:
       env:
         BASE_REF: ${{ github.base_ref }}
         ZEPHYR_BASE: ${{ env.ZEPHYR_BASE }}
+        LICENSE_ALLOW_LIST: ${{ inputs.license_allow_list }}
+        MODULE_PATH: ${{ inputs.path }}
       working-directory: ncs/${{ inputs.path }}
       if: contains(github.event.pull_request.user.login, 'dependabot[bot]') != true
       run: |
@@ -88,7 +95,7 @@ jobs:
         export PATH="$HOME/bin:$PATH"
         ${ZEPHYR_BASE}/../nrf/scripts/ci/check_license.py \
             --github \
-            -l ${ZEPHYR_BASE}/../${{ inputs.license_allow_list }} \
+            -l ${ZEPHYR_BASE}/../"${LICENSE_ALLOW_LIST}" \
             -c origin/${BASE_REF}..
 
     - name: Upload results
