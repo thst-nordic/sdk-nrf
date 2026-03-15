@@ -40,11 +40,55 @@ jobs:
     runs-on: ubuntu-24.04
     name: Run license checks on patch series (PR)
     steps:
+    - name: Validate inputs
+      run: |
+        # Validate path input - must not contain path traversal, absolute paths, shell metacharacters, or newlines
+        if [[ "${{ inputs.path }}" =~ \.\./|\;|\||\&|\$\(|\`|\<|\>|[ ]{2,}|\n|\r|^/ ]]; then
+          echo "Error: Invalid characters detected in path input"
+          exit 1
+        fi
+        
+        # Check for absolute path separately for clearer error message
+        if [[ "${{ inputs.path }}" =~ ^/ ]]; then
+          echo "Error: Absolute paths not allowed. Path must be relative to west workspace."
+          exit 1
+        fi
+        
+        # Check for newlines that could enable GITHUB_ENV injection
+        if [[ "${{ inputs.path }}" == *$'\n'* ]] || [[ "${{ inputs.path }}" == *$'\r'* ]]; then
+          echo "Error: Newline characters detected in path input - potential GITHUB_ENV injection"
+          exit 1
+        fi
+        
+        # Validate license_allow_list input
+        if [[ "${{ inputs.license_allow_list }}" =~ \.\./|\;|\||\&|\$\(|\`|\<|\>|[ ]{2,}|\n|\r|^/ ]]; then
+          echo "Error: Invalid characters detected in license_allow_list input"
+          exit 1
+        fi
+        
+        # Check for absolute path in license_allow_list
+        if [[ "${{ inputs.license_allow_list }}" =~ ^/ ]]; then
+          echo "Error: Absolute paths not allowed. License allow list path must be relative to west workspace."
+          exit 1
+        fi
+        
+        # Check for newlines in license_allow_list
+        if [[ "${{ inputs.license_allow_list }}" == *$'\n'* ]] || [[ "${{ inputs.license_allow_list }}" == *$'\r'* ]]; then
+          echo "Error: Newline characters detected in license_allow_list input - potential GITHUB_ENV injection"
+          exit 1
+        fi
+        
+        # Set sanitized environment variables
+        echo "SANITIZED_PATH=${{ inputs.path }}" >> $GITHUB_ENV
+        echo "SANITIZED_LICENSE_ALLOW_LIST=${{ inputs.license_allow_list }}" >> $GITHUB_ENV
+
     - name: Checkout sources
       uses: nrfconnect/action-checkout-west-update@main
+      env:
+        MODULE_PATH: ${{ env.SANITIZED_PATH }}
       with:
         git-fetch-depth: 0
-        path: ncs/${{ inputs.path }}
+        path: ncs/${{ env.SANITIZED_PATH }}
         west-update-args: '-n zephyr bsim'
 
     - name: cache-pip
@@ -66,13 +110,14 @@ jobs:
       working-directory: ncs
       env:
         PR_REF: ${{ github.event.pull_request.head.sha }}
+        MODULE_PATH: ${{ env.SANITIZED_PATH }}
       run: |
         export PATH="$HOME/.local/bin:$PATH"
         export PATH="$HOME/bin:$PATH"
         west zephyr-export
         echo "ZEPHYR_BASE=$(pwd)/zephyr" >> $GITHUB_ENV
-        # debug
-        ( cd ${{ inputs.path }}; echo "${{ inputs.path }}"; git log --pretty=oneline --max-count=10 )
+        # debug - use environment variables to prevent injection
+        ( cd "${MODULE_PATH}"; echo "Module path: ${MODULE_PATH}"; git log --pretty=oneline --max-count=10 )
         ( cd nrf; echo "nrf"; git log --pretty=oneline --max-count=10 )
         ( cd zephyr; echo "zephyr"; git log --pretty=oneline --max-count=10 )
 
@@ -85,21 +130,26 @@ jobs:
       env:
         BASE_REF: ${{ github.base_ref }}
         ZEPHYR_BASE: ${{ env.ZEPHYR_BASE }}
-      working-directory: ncs/${{ inputs.path }}
+        MODULE_PATH: ${{ env.SANITIZED_PATH }}
+        LICENSE_ALLOW_LIST: ${{ env.SANITIZED_LICENSE_ALLOW_LIST }}
+      working-directory: ncs
       if: contains(github.event.pull_request.user.login, 'dependabot[bot]') != true
       run: |
         export PATH="$HOME/.local/bin:$PATH"
         export PATH="$HOME/bin:$PATH"
-        ${ZEPHYR_BASE}/../nrf/scripts/ci/check_license.py \
+        cd "${MODULE_PATH}"
+        "${ZEPHYR_BASE}/../nrf/scripts/ci/check_license.py" \
             --github \
-            -l ${ZEPHYR_BASE}/../${{ inputs.license_allow_list }} \
-            -c origin/${BASE_REF}..
+            -l "${ZEPHYR_BASE}/../${LICENSE_ALLOW_LIST}" \
+            -c "origin/${BASE_REF}.."
 
     - name: Upload results
       uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
       continue-on-error: true
       if: always() && contains(github.event.pull_request.user.login, 'dependabot[bot]') != true
+      env:
+        MODULE_PATH: ${{ env.SANITIZED_PATH }}
       with:
         name: licenses.xml
-        path: ncs/${{ inputs.path }}/licenses.xml
+        path: ncs/${{ env.MODULE_PATH }}/licenses.xml
         overwrite: true
