@@ -1,0 +1,10 @@
+- params:
+    git:
+      repoName: sdk-nrf-testing-public
+      branches:
+        - main
+    scan:
+      projects:
+        - workingDirs:
+            - .
+          pipRequirementsFile: scripts/requirements-fixed.txt
