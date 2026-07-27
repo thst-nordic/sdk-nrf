@@ -1,0 +1,41 @@
+# Grype configuration for NCS workspace SBOM scans.
+# Tune ignore rules after reviewing initial report-only runs.
+# See: https://github.com/anchore/grype#specifying-ignore-rules
+
+ignore:
+  # Precompiled Nordic libraries — no package metadata for CVE matching
+  - path: "**/lib/*.a"
+    reason: "Nordic precompiled blob — track via PSIRT advisories"
+  - path: "**/lib/**/*.a"
+    reason: "Nordic precompiled blob — track via PSIRT advisories"
+  - path: "**/lib/*.lib"
+    reason: "Nordic precompiled blob — track via PSIRT advisories"
+
+  # SoftDevice Controller binary blobs
+  - path: "**/softdevice_controller/**/*.bin"
+    reason: "SDC binary blob — opaque to Grype"
+  - path: "**/sdc/**/*.bin"
+    reason: "SDC binary blob — opaque to Grype"
+
+  # Build artifacts and CI output — not shipped firmware
+  - path: "**/build/**"
+    reason: "Build output directory"
+  - path: "**/twister-out/**"
+    reason: "Twister test output"
+  - path: "**/.git/**"
+    reason: "Git metadata"
+
+  # Host-only tooling in workspace — not part of firmware image
+  - path: "**/tools/**"
+    reason: "Host development tools"
+  - path: "**/scripts/ci/**"
+    reason: "CI scripts — not shipped"
+
+  # Test harnesses — high false-positive rate for CVEs in test-only deps
+  - path: "**/tests/**"
+    reason: "Test code — tune per-project after baseline review"
+
+# Uncomment and fill after first report-only run identifies noisy CVEs:
+# ignore:
+#   - vulnerability: CVE-XXXX-YYYY
+#     reason: "Not compiled into shipped firmware — west project X unused"

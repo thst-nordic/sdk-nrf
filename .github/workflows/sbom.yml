@@ -1,0 +1,233 @@
+name: NCS SBOM Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      grype_fail_gate:
+        description: Enable Grype fail gate for this run (Stage 1b)
+        type: boolean
+        default: false
+
+  # Stage 3 — enable weekly CVE sweep:
+  # schedule:
+  #   - cron: '0 3 * * 1'
+
+concurrency:
+  group: sbom-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+env:
+  SYFT_VERSION: v1.49.0
+  GRYPE_VERSION: v0.116.0
+  FAIL_ON_SEVERITY: high
+  # Stage 1a: report-only. Set to true after tuning .grype.yaml (Stage 1b).
+  GRYPE_FAIL_GATE: false
+  GRYPE_CONFIG: ncs/nrf/.grype.yaml
+
+jobs:
+  sbom:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Checkout west workspace
+        uses: nrfconnect/action-checkout-west-update@b3257f7035e900ae50c280fe5759508f547f872d # 22 Jan 2026
+        with:
+          git-fetch-depth: 0
+          path: ncs/nrf
+          git-ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          rebase: ${{ github.event_name == 'pull_request' }}
+
+      - name: Resolve NCS version
+        id: ncs_version
+        working-directory: ncs/nrf
+        run: |
+          major=$(grep '^VERSION_MAJOR' VERSION | awk -F' = ' '{print $2}')
+          minor=$(grep '^VERSION_MINOR' VERSION | awk -F' = ' '{print $2}')
+          patch=$(grep '^PATCHLEVEL' VERSION | awk -F' = ' '{print $2}')
+          version="v${major}.${minor}.${patch}"
+          short_sha="${GITHUB_SHA:0:8}"
+          dt_version="${version}-${short_sha}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "dt_version=${dt_version}" >> "$GITHUB_OUTPUT"
+          echo "NCS ${version} (DT version ${dt_version})"
+
+      - name: Extract west manifest graph
+        working-directory: ncs
+        run: |
+          mkdir -p sbom sbom/projects
+          west list -f "{name}|{revision}|{path}|{url}" > sbom/west-projects.csv
+          west list -f "{name:30} {revision:12} {path}" > sbom/west-manifest-snapshot.txt
+          west manifest --resolve > sbom/west-manifest-resolved.yml
+          echo "----- Manifest snapshot -----"
+          cat sbom/west-manifest-snapshot.txt
+
+      - name: Install Syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+            | sh -s -- -b /usr/local/bin "${SYFT_VERSION}"
+          syft version
+
+      - name: Install Grype
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh \
+            | sh -s -- -b /usr/local/bin "${GRYPE_VERSION}"
+          grype version
+
+      - name: Full workspace SBOM — SPDX + CycloneDX (Mode A)
+        working-directory: ncs
+        run: |
+          syft "dir:${GITHUB_WORKSPACE}/ncs" \
+            -o spdx-json=sbom/ncs-full.spdx.json \
+            -o spdx-tag-value=sbom/ncs-full.spdx \
+            -o cyclonedx-json=sbom/ncs-full.cdx.json \
+            --exclude './**/build/**' \
+            --exclude './**/.git/**' \
+            --exclude './**/twister-out/**'
+
+      - name: Per-project SBOMs mapped to west revisions (Mode B)
+        run: bash ncs/nrf/scripts/sbom/scan-projects.sh "${GITHUB_WORKSPACE}/ncs"
+
+      - name: Annotate per-project SBOMs with west revisions
+        working-directory: ncs
+        run: bash nrf/scripts/sbom/annotate.sh
+
+      - name: Generate license SBOM (west ncs-sbom)
+        working-directory: ncs
+        run: |
+          pip3 install -U pip
+          pip3 install -r nrf/scripts/requirements-west-ncs-sbom.txt
+          west ncs-sbom \
+            --input-dir nrf/samples/zephyr/basic/blinky \
+            --output-spdx sbom/license-blinky.spdx \
+            --package-supplier "Nordic Semiconductor ASA"
+
+      - name: Vulnerability scan reports (Grype)
+        working-directory: ncs
+        run: |
+          grype sbom:sbom/ncs-full.cdx.json -c "${GITHUB_WORKSPACE}/${GRYPE_CONFIG}" -o table > sbom/grype-report.txt || true
+          grype sbom:sbom/ncs-full.cdx.json -c "${GITHUB_WORKSPACE}/${GRYPE_CONFIG}" -o json  > sbom/grype-report.json || true
+          grype sbom:sbom/ncs-full.cdx.json -c "${GITHUB_WORKSPACE}/${GRYPE_CONFIG}" -o sarif > sbom/grype-results.sarif || true
+          cat sbom/grype-report.txt
+
+      - name: Grype CVE gate
+        if: >-
+          env.GRYPE_FAIL_GATE == 'true' ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.grype_fail_gate == 'true')
+        working-directory: ncs
+        run: grype sbom:sbom/ncs-full.cdx.json -c "${GITHUB_WORKSPACE}/${GRYPE_CONFIG}" --fail-on "${FAIL_ON_SEVERITY}"
+
+      - name: Upload SARIF to GitHub Security tab
+        if: always() && hashFiles('ncs/sbom/grype-results.sarif') != ''
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@f1f6e5f6af878fb37288ce1c627459e94dbf7d01 # v3.30.1
+        with:
+          sarif_file: ncs/sbom/grype-results.sarif
+          category: grype-ncs-sbom
+
+      - name: Package CycloneDX and SPDX zips
+        id: package_zips
+        if: always()
+        working-directory: ncs/sbom
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          cdx_files=(ncs-full.cdx.json projects/*.cdx.json)
+          spdx_files=(ncs-full.spdx ncs-full.spdx.json license-blinky.spdx projects/*.spdx.json)
+
+          if ((${#cdx_files[@]})); then
+            zip -r "../ncs-sbom-cyclonedx.zip" "${cdx_files[@]}"
+            echo "cyclonedx_zip=ncs/ncs-sbom-cyclonedx.zip" >> "$GITHUB_OUTPUT"
+            echo "cyclonedx_size=$(du -h ../ncs-sbom-cyclonedx.zip | cut -f1)" >> "$GITHUB_OUTPUT"
+          fi
+
+          if ((${#spdx_files[@]})); then
+            zip -r "../ncs-sbom-spdx.zip" "${spdx_files[@]}"
+            echo "spdx_zip=ncs/ncs-sbom-spdx.zip" >> "$GITHUB_OUTPUT"
+            echo "spdx_size=$(du -h ../ncs-sbom-spdx.zip | cut -f1)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload CycloneDX zip
+        if: always() && steps.package_zips.outputs.cyclonedx_zip != ''
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        with:
+          name: ncs-sbom-cyclonedx-${{ steps.ncs_version.outputs.dt_version }}
+          path: ncs/ncs-sbom-cyclonedx.zip
+          retention-days: 90
+
+      - name: Upload SPDX zip
+        if: always() && steps.package_zips.outputs.spdx_zip != ''
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        with:
+          name: ncs-sbom-spdx-${{ steps.ncs_version.outputs.dt_version }}
+          path: ncs/ncs-sbom-spdx.zip
+          retention-days: 90
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        if: always()
+        with:
+          name: ncs-sbom-${{ steps.ncs_version.outputs.dt_version }}
+          path: ncs/sbom/
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: SBOM artifact summary
+        if: always()
+        working-directory: ncs/sbom
+        run: |
+          fmt_size() { du -h "$1" 2>/dev/null | cut -f1; }
+
+          cdx_size="$(fmt_size ncs-full.cdx.json)"
+          spdx_size="$(fmt_size ncs-full.spdx)"
+          spdx_json_size="$(fmt_size ncs-full.spdx.json)"
+
+          {
+            echo "## SBOM download bundles"
+            echo ""
+            echo "| Bundle | Contents | Size | Artifact |"
+            echo "|--------|----------|------|----------|"
+            if [ -n "${{ steps.package_zips.outputs.cyclonedx_size }}" ]; then
+              echo "| **CycloneDX** | \`ncs-full.cdx.json\` + \`projects/*.cdx.json\` | ${{ steps.package_zips.outputs.cyclonedx_size }} | **ncs-sbom-cyclonedx-${{ steps.ncs_version.outputs.dt_version }}** |"
+            fi
+            if [ -n "${{ steps.package_zips.outputs.spdx_size }}" ]; then
+              echo "| **SPDX** | \`ncs-full.spdx\`, \`ncs-full.spdx.json\`, \`license-blinky.spdx\`, \`projects/*.spdx.json\` | ${{ steps.package_zips.outputs.spdx_size }} | **ncs-sbom-spdx-${{ steps.ncs_version.outputs.dt_version }}** |"
+            fi
+            echo ""
+            echo "### Full workspace files"
+            echo ""
+            echo "| Format | File | Size |"
+            echo "|--------|------|------|"
+            [ -f ncs-full.cdx.json ] && \
+              echo "| CycloneDX (JSON) | \`ncs-full.cdx.json\` | ${cdx_size} |"
+            [ -f ncs-full.spdx ] && \
+              echo "| SPDX (tag-value) | \`ncs-full.spdx\` | ${spdx_size} |"
+            [ -f ncs-full.spdx.json ] && \
+              echo "| SPDX (JSON) | \`ncs-full.spdx.json\` | ${spdx_json_size} |"
+            echo ""
+            echo "> Download the **zip bundles** from the **Artifacts** section on this run page."
+            echo ""
+            echo "## All SBOM outputs"
+            echo ""
+            echo "<details>"
+            echo "<summary>Complete file listing ($(find . -type f | wc -l) files)</summary>"
+            echo ""
+            echo "| File | Size |"
+            echo "|------|------|"
+            find . -type f | sort | while read -r f; do
+              echo "| \`${f#./}\` | $(fmt_size "$f") |"
+            done
+            echo ""
+            echo "</details>"
+            echo ""
+            echo "Full bundle artifact: \`ncs-sbom-${{ steps.ncs_version.outputs.dt_version }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
