@@ -1,0 +1,13 @@
+# Compile manifest for nrf/scripts/requirements-fixed.txt
+#
+# Paths are west-topdir-relative (same as running pip-compile from the west workspace root).
+# run-pip-compile.sh reads this file and passes each entry to pip-compile-cross-platform.
+#
+# Later entries win on conflicting constraints. Keep nrf/scripts/requirements-extra.txt
+# last so Nordic pins and security floors override build/ci inputs.
+
+bootloader/mcuboot/scripts/requirements.txt
+zephyr/scripts/requirements.txt
+nrf/scripts/requirements-ci.txt
+nrf/scripts/requirements.txt
+nrf/scripts/requirements-extra.txt

@@ -8,6 +8,7 @@ on:
       - 'v*-branch'
     paths:
       - 'scripts/requirements*.txt'
+      - 'scripts/pip/requirements-lock.in'
       - '.github/workflows/validate-pip-requirements-fixed-file.yml'
 
 permissions:
@@ -71,11 +72,7 @@ jobs:
               --index-url https://files.nordicsemi.com/artifactory/api/pypi/nordic-pypi/simple \
               pip-compile-cross-platform==1.4.2+nordic.3 --upgrade
             pip-compile-cross-platform \
-              bootloader/mcuboot/scripts/requirements.txt \
-              zephyr/scripts/requirements.txt \
-              nrf/scripts/requirements-ci.txt \
-              nrf/scripts/requirements-extra.txt \
-              nrf/scripts/requirements.txt \
+              $(nrf/scripts/pip/read-requirements-lock.sh | xargs) \
               --output-file nrf/scripts/requirements-fixed.txt \
               --min-python-version 3.12 \
               --index-url https://files.nordicsemi.com/artifactory/api/pypi/nordic-pypi/simple
