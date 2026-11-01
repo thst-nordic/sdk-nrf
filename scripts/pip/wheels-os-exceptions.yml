@@ -1,0 +1,16 @@
+# OS-specific wheel checks (validator keys: linux, windows, mac_arm).
+# Listed packages are checked only on the given OSes; all others skip them.
+#
+# Use when a pin is platform-specific but markers are easy to miss in CI,
+# or when the lock uses broad markers with optional Windows-only deps.
+
+package_os_only:
+  windows-curses:
+    - windows
+  python-magic-bin:
+    - windows
+  # sdist-only upstream; Nordic wheels are built via pip_requestor on Linux only.
+  cbor:
+    - linux
+  reuse:
+    - linux
