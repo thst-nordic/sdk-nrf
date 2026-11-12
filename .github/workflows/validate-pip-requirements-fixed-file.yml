@@ -24,7 +24,7 @@ jobs:
       - name: Get python version
         id: pyv
         run: |
-          python_version=$(awk '/^python:/{f=1;next} f&&/^[[:space:]]+version:/{print $2; exit}' scripts/tools-versions-linux.yml)
+          python_version=$(awk '/^python:/{getline; print $2; exit}' scripts/tools-versions-linux.yml)
           echo "python_version=$python_version" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
@@ -42,7 +42,7 @@ jobs:
       - name: Verify pins exist on PyPI (sdist or wheel)
         run: |
           set -euo pipefail
-          pip_version=$(awk '/^pip:/{f=1;next} f&&/^[[:space:]]+version:/{print $2; exit}' scripts/tools-versions-linux.yml)
+          pip_version=$(awk '/^pip:/{getline; print $2; exit}' scripts/tools-versions-linux.yml)
           python -m pip install "pip==${pip_version}"
           python3 <<'PY'
           import re
