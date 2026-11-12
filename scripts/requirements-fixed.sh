@@ -143,23 +143,28 @@ init_workspace() {
 # container_run [-v host:path ...] [-e KEY=VAL ...] -- 'bash -lc script'
 container_run() {
   local extra_volumes=() extra_env=() script=""
+  local arg mount_spec env_spec remainder
   while [[ $# -gt 0 ]]; do
-    case "$1" in
+    arg=$1
+    case "$arg" in
       -v)
-        extra_volumes+=(-v "$2")
+        mount_spec=$2
+        extra_volumes+=(-v "$mount_spec")
         shift 2
         ;;
       -e)
-        extra_env+=(-e "$2")
+        env_spec=$2
+        extra_env+=(-e "$env_spec")
         shift 2
         ;;
       --)
         shift
-        script=$1
+        remainder=$1
+        script=$remainder
         break
         ;;
       *)
-        echo "container_run: unknown argument: $1" >&2
+        echo "container_run: unknown argument: $arg" >&2
         exit 1
         ;;
     esac
@@ -511,7 +516,8 @@ CHECK_INDEX
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   mode=regen
   while [[ $# -gt 0 ]]; do
-    case "$1" in
+    option=$1
+    case "$option" in
       -h | --help)
         usage
         exit 0
@@ -521,7 +527,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         shift
         ;;
       *)
-        echo "Unknown option: $1" >&2
+        echo "Unknown option: $option" >&2
         usage >&2
         exit 1
         ;;

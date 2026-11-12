@@ -24,8 +24,8 @@ jobs:
       - name: Get python version
         id: pyv
         run: |
-          sudo snap install --channel=v4 yq
-          echo "python_version=$(yq '.python.version' scripts/tools-versions-linux.yml)" >> $GITHUB_OUTPUT
+          python_version=$(awk '/^python:/{f=1;next} f&&/^[[:space:]]+version:/{print $2; exit}' scripts/tools-versions-linux.yml)
+          echo "python_version=$python_version" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
         with:
@@ -39,11 +39,47 @@ jobs:
             > /tmp/requirements-pypi.txt
           echo "Pins to check: $(grep -c '==' /tmp/requirements-pypi.txt || true)"
 
-      - name: Download pins from PyPI (sdist or wheel)
+      - name: Verify pins exist on PyPI (sdist or wheel)
         run: |
           set -euo pipefail
-          python -m pip install -U pip
-          mkdir -p /tmp/pypi-check
-          # No install/build: only that each version exists on pypi.org (sdist-only is OK).
-          python -m pip download --no-deps --index-url https://pypi.org/simple \
-            -r /tmp/requirements-pypi.txt -d /tmp/pypi-check
+          pip_version=$(awk '/^pip:/{f=1;next} f&&/^[[:space:]]+version:/{print $2; exit}' scripts/tools-versions-linux.yml)
+          python -m pip install "pip==${pip_version}"
+          python3 <<'PY'
+          import re
+          import sys
+          import urllib.error
+          import urllib.request
+
+          failures = []
+          checked = 0
+          with open("/tmp/requirements-pypi.txt", encoding="utf-8") as f:
+              for lineno, raw in enumerate(f, 1):
+                  line = raw.strip()
+                  if not line or line.startswith("#"):
+                      continue
+                  m = re.match(r"^([A-Za-z0-9_.-]+)==([^#\s;]+)", line)
+                  if not m:
+                      failures.append(f"line {lineno}: unparsed {line!r}")
+                      continue
+                  name, version = m.group(1), m.group(2)
+                  url = f"https://pypi.org/pypi/{name}/{version}/json"
+                  try:
+                      with urllib.request.urlopen(url, timeout=120) as resp:
+                          if resp.status != 200:
+                              failures.append(f"{name}=={version}: HTTP {resp.status}")
+                              continue
+                  except urllib.error.HTTPError as e:
+                      failures.append(f"{name}=={version}: {e}")
+                      continue
+                  except OSError as e:
+                      failures.append(f"{name}=={version}: {e}")
+                      continue
+                  checked += 1
+
+          if failures:
+              print("PyPI pin check failed:", file=sys.stderr)
+              for msg in failures:
+                  print(msg, file=sys.stderr)
+              sys.exit(1)
+          print(f"OK: {checked} pins found on PyPI")
+          PY
