@@ -1,4 +1,9 @@
-# Verify each lock pin is published on pypi.org (sdist or wheel); matter-idl omitted at runtime.
+# Fast lockfile validation (no pip-compile / pip install).
+# Each pin: bdist_wheel on pypi.org and on Nordic nordic-pypi (marker-aware cp312 OS set).
+# Does not replace requirements-fixed.sh regen or bundler pip-audit.
+# matter-idl, py-utlx: Nordic mirror only (not on public PyPI).
+# Upstream sdist-only pins (e.g. cbor, docopt, wget) fail pypi-wheels until wheels exist.
+# Failing only nordic-wheels → mirror sync; only pypi-wheels → upstream wheels or pin change.
 name: Validate pip requirements-fixed.txt
 
 on:
@@ -10,14 +15,36 @@ on:
     paths:
       - 'scripts/requirements-fixed.txt'
       - 'scripts/requirements*.txt'
+      - 'scripts/validate_requirements_fixed_pins.py'
       - '.github/workflows/validate-pip-requirements-fixed-file.yml'
 
 permissions:
   contents: read
 
+env:
+  VALIDATOR: scripts/validate_requirements_fixed_pins.py
+  REQUIREMENTS: scripts/requirements-fixed.txt
+  NORDIC_INDEX: https://files.nordicsemi.com/artifactory/api/pypi/nordic-pypi/simple
+
 jobs:
-  test-install-pypi:
+  prepare:
     runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sanity check lockfile index header
+        run: |
+          set -euo pipefail
+          grep -q 'files.nordicsemi.com/artifactory/api/pypi/nordic-pypi/simple' \
+            "$REQUIREMENTS"
+
+  pypi-wheels:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v4
 
@@ -31,55 +58,45 @@ jobs:
         with:
           python-version: '${{ steps.pyv.outputs.python_version }}'
 
-      - name: Prepare requirements (PyPI)
+      - name: Verify PyPI wheels (shard ${{ matrix.shard }})
         run: |
           set -euo pipefail
-          grep -v '^--' scripts/requirements-fixed.txt \
-            | grep -vE '^matter-idl==' \
-            > /tmp/requirements-pypi.txt
-          echo "Pins to check: $(grep -c '==' /tmp/requirements-pypi.txt || true)"
+          python3 "$VALIDATOR" \
+            --requirements "$REQUIREMENTS" \
+            --index pypi \
+            --python-tag cp312 \
+            --workers 20 \
+            --shard-count 4 \
+            --shard-id ${{ matrix.shard }}
 
-      - name: Verify pins exist on PyPI (sdist or wheel)
+  nordic-wheels:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get python version
+        id: pyv
+        run: |
+          python_version=$(awk '/^python:/{getline; print $2; exit}' scripts/tools-versions-linux.yml)
+          echo "python_version=$python_version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5
+        with:
+          python-version: '${{ steps.pyv.outputs.python_version }}'
+
+      - name: Verify Nordic mirror wheels (shard ${{ matrix.shard }})
         run: |
           set -euo pipefail
-          pip_version=$(awk '/^pip:/{getline; print $2; exit}' scripts/tools-versions-linux.yml)
-          python -m pip install "pip==${pip_version}"
-          python3 <<'PY'
-          import re
-          import sys
-          import urllib.error
-          import urllib.request
-
-          failures = []
-          checked = 0
-          with open("/tmp/requirements-pypi.txt", encoding="utf-8") as f:
-              for lineno, raw in enumerate(f, 1):
-                  line = raw.strip()
-                  if not line or line.startswith("#"):
-                      continue
-                  m = re.match(r"^([A-Za-z0-9_.-]+)==([^#\s;]+)", line)
-                  if not m:
-                      failures.append(f"line {lineno}: unparsed {line!r}")
-                      continue
-                  name, version = m.group(1), m.group(2)
-                  url = f"https://pypi.org/pypi/{name}/{version}/json"
-                  try:
-                      with urllib.request.urlopen(url, timeout=120) as resp:
-                          if resp.status != 200:
-                              failures.append(f"{name}=={version}: HTTP {resp.status}")
-                              continue
-                  except urllib.error.HTTPError as e:
-                      failures.append(f"{name}=={version}: {e}")
-                      continue
-                  except OSError as e:
-                      failures.append(f"{name}=={version}: {e}")
-                      continue
-                  checked += 1
-
-          if failures:
-              print("PyPI pin check failed:", file=sys.stderr)
-              for msg in failures:
-                  print(msg, file=sys.stderr)
-              sys.exit(1)
-          print(f"OK: {checked} pins found on PyPI")
-          PY
+          python3 "$VALIDATOR" \
+            --requirements "$REQUIREMENTS" \
+            --index nordic \
+            --index-url "$NORDIC_INDEX" \
+            --python-tag cp312 \
+            --workers 20 \
+            --shard-count 4 \
+            --shard-id ${{ matrix.shard }}
