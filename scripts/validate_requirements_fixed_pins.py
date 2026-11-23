@@ -3,7 +3,10 @@
 
 Checks bdist_wheel availability for cp312 on marker-aware OS targets (linux,
 windows, mac_arm). Nordic index: simple page + optional HEAD. PyPI: release JSON.
-matter-idl is checked on Nordic only (not public PyPI).
+HTTP only (no pip download/install). matter-idl is checked on Nordic only.
+
+Packages listed in requirements-validate-sdist-ok.txt may be sdist-only on PyPI;
+the mirror must still publish the versioned sdist (bundler builds on win/mac).
 """
 
 from __future__ import annotations
@@ -12,6 +15,7 @@ import argparse
 import json
 import re
 import sys
+from pathlib import Path
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -29,6 +33,10 @@ PYPI_SKIP_NAMES = frozenset({"matter-idl", "py-utlx"})
 
 OS_ALL = ("linux", "windows", "mac_arm")
 
+SDIST_OK_FILE_DEFAULT = str(
+    Path(__file__).resolve().parent / "requirements-validate-sdist-ok.txt"
+)
+
 
 @dataclass(frozen=True)
 class Pin:
@@ -40,6 +48,19 @@ class Pin:
 
 def normalize_name(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def load_sdist_ok_names(path: str) -> frozenset[str]:
+    names: set[str] = set()
+    try:
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = line.split("#", 1)[0].strip()
+                if line:
+                    names.add(normalize_name(line))
+    except FileNotFoundError:
+        pass
+    return frozenset(names)
 
 
 def required_oses(marker: str) -> frozenset[str]:
@@ -199,6 +220,50 @@ def wheels_for_version_from_pypi_json(data: dict) -> list[str]:
     return out
 
 
+def has_sdist_for_version_pypi(data: dict, ver: str) -> bool:
+    ver_escaped = re.escape(ver)
+    pat = re.compile(rf"-{ver_escaped}\.(tar\.gz|zip|tar\.bz2|tar\.xz)$", re.I)
+    for entry in data.get("urls") or []:
+        if entry.get("packagetype") != "sdist":
+            continue
+        fn = entry.get("filename") or ""
+        if pat.search(fn):
+            return True
+    return False
+
+
+def nordic_sdist_hrefs_for_version(body: str, name: str, ver: str) -> list[str]:
+    # Artifactory simple pages may use underscores in filenames (py_utlx, etc.).
+    name_pat = re.escape(name).replace(r"\-", "[_.-]")
+    href_pat = re.compile(
+        rf'href=["\']([^"\']*{name_pat}[^"\']*{re.escape(ver)}[^"\']*'
+        rf"(?:\.tar\.gz|\.zip|\.tar\.bz2|\.tar\.xz))(?:#[^\"\']*)?['\"]",
+        re.I,
+    )
+    return [m.group(1) for m in href_pat.finditer(body)]
+
+
+def verify_nordic_sdist(
+    body: str, simple_url: str, pin: Pin
+) -> list[str]:
+    failures: list[str] = []
+    hrefs = nordic_sdist_hrefs_for_version(body, pin.name, pin.version)
+    if not hrefs:
+        failures.append(
+            f"{pin.name}=={pin.version} (no sdist on Nordic simple index)"
+        )
+        return failures
+    archive_url = (
+        hrefs[0] if hrefs[0].startswith("http") else urljoin(simple_url, hrefs[0])
+    )
+    st = http_status(archive_url, "HEAD")
+    if st not in (200, 302, 303, 307, 308, 405):
+        failures.append(
+            f"{pin.name}=={pin.version} — sdist HTTP {st} on Nordic ({archive_url})"
+        )
+    return failures
+
+
 def absent_os_for_pin(
     wheels: list[str], os_required: frozenset[str], python_tag: str
 ) -> list[str]:
@@ -212,7 +277,10 @@ def absent_os_for_pin(
 
 
 def check_nordic_pin(
-    pin: Pin, index_url: str, python_tag: str
+    pin: Pin,
+    index_url: str,
+    python_tag: str,
+    sdist_ok: frozenset[str],
 ) -> list[str]:
     failures: list[str] = []
     simple_url = urljoin(index_url, pin.name + "/")
@@ -223,15 +291,24 @@ def check_nordic_pin(
     with urllib.request.urlopen(simple_url, timeout=120) as resp:
         body = resp.read().decode("utf-8", "replace")
     wheels = wheels_for_version_from_simple(body, pin.version)
+    allow_sdist = pin.name in sdist_ok
     if not wheels:
+        if allow_sdist:
+            return verify_nordic_sdist(body, simple_url, pin)
         failures.append(f"{pin.name}=={pin.version} (no wheels on simple index)")
         return failures
     absent = absent_os_for_pin(wheels, pin.os_required, python_tag)
     if absent:
-        failures.append(
-            f"{pin.name}=={pin.version} — missing OS: {', '.join(absent)} ({python_tag})"
-        )
-        return failures
+        if allow_sdist:
+            failures = verify_nordic_sdist(body, simple_url, pin)
+            if failures:
+                return failures
+            absent = []
+        if absent:
+            failures.append(
+                f"{pin.name}=={pin.version} — missing OS: {', '.join(absent)} ({python_tag})"
+            )
+            return failures
     checked_os: set[str] = set()
     for fn in wheels:
         if not compatible_python(fn, python_tag):
@@ -262,7 +339,9 @@ def check_nordic_pin(
     return failures
 
 
-def check_pypi_pin(pin: Pin, python_tag: str) -> list[str]:
+def check_pypi_pin(
+    pin: Pin, python_tag: str, sdist_ok: frozenset[str]
+) -> list[str]:
     failures: list[str] = []
     url = PYPI_JSON_TEMPLATE.format(name=pin.name, version=pin.version)
     try:
@@ -276,6 +355,8 @@ def check_pypi_pin(pin: Pin, python_tag: str) -> list[str]:
         return failures
     wheels = wheels_for_version_from_pypi_json(data)
     if not wheels:
+        if pin.name in sdist_ok and has_sdist_for_version_pypi(data, pin.version):
+            return []
         failures.append(f"{pin.name}=={pin.version} (sdist only / no wheels on PyPI)")
         return failures
     absent = absent_os_for_pin(wheels, pin.os_required, python_tag)
@@ -294,14 +375,18 @@ def shard_pins(pins: list[Pin], shard_count: int, shard_id: int) -> list[Pin]:
 
 
 def check_pin(
-    pin: Pin, index: str, index_url: str, python_tag: str
+    pin: Pin,
+    index: str,
+    index_url: str,
+    python_tag: str,
+    sdist_ok: frozenset[str],
 ) -> list[str]:
     if index == "pypi" and pin.name in PYPI_SKIP_NAMES:
         return []
     if index == "nordic":
-        return check_nordic_pin(pin, index_url, python_tag)
+        return check_nordic_pin(pin, index_url, python_tag, sdist_ok)
     if index == "pypi":
-        return check_pypi_pin(pin, python_tag)
+        return check_pypi_pin(pin, python_tag, sdist_ok)
     raise ValueError(f"unknown index {index!r}")
 
 
@@ -326,6 +411,11 @@ def main() -> int:
     parser.add_argument("--workers", type=int, default=24)
     parser.add_argument("--shard-count", type=int, default=1)
     parser.add_argument("--shard-id", type=int, default=0)
+    parser.add_argument(
+        "--sdist-ok-file",
+        default=SDIST_OK_FILE_DEFAULT,
+        help="Package names allowed as versioned sdist (no wheel on all OSes)",
+    )
     args = parser.parse_args()
 
     if args.shard_count < 1 or not 0 <= args.shard_id < args.shard_count:
@@ -333,6 +423,7 @@ def main() -> int:
         return 2
 
     index_url = args.index_url.rstrip("/") + "/"
+    sdist_ok = load_sdist_ok_names(args.sdist_ok_file)
     pins, parse_errors = parse_lockfile(args.requirements)
     failures: list[str] = list(parse_errors) if args.shard_id == 0 else []
     pins = shard_pins(pins, args.shard_count, args.shard_id)
@@ -350,7 +441,9 @@ def main() -> int:
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = {
-            pool.submit(check_pin, pin, args.index, index_url, args.python_tag): pin
+            pool.submit(
+                check_pin, pin, args.index, index_url, args.python_tag, sdist_ok
+            ): pin
             for pin in pins
             if not (args.index == "pypi" and pin.name in PYPI_SKIP_NAMES)
         }

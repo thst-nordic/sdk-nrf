@@ -1,0 +1,10 @@
+# Pins that may be satisfied by sdist on the index (no cp312 wheel on all OSes).
+# Validator uses HTTP metadata only — no pip download (Sonar-safe).
+# Bundler may compile these from sdist on Windows/macOS.
+# Mirror often has py3-none-any wheels even when public PyPI is sdist-only.
+cbor
+docopt
+pynrfjprog
+python-path
+stringcase
+wget

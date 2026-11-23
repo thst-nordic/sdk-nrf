@@ -307,6 +307,7 @@ python3 /ncs/"$VALIDATE_PINS_SCRIPT" \
   --requirements "/ncs/$OUT_FILE" \
   --index nordic \
   --index-url "$INDEX_URL" \
+  --sdist-ok-file "/ncs/nrf/scripts/requirements-validate-sdist-ok.txt" \
   --python-tag "${CHECK_INDEX_PYTHON_TAG:-cp312}" \
   --workers 24
 CHECK_INDEX

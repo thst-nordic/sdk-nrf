@@ -1,9 +1,10 @@
 # Fast lockfile validation (no pip-compile / pip install).
 # Each pin: bdist_wheel on pypi.org and on Nordic nordic-pypi (marker-aware cp312 OS set).
+# Markers: default linux+windows+mac_arm; win-only → windows; platform_system!=Linux → no linux wheel.
 # Does not replace requirements-fixed.sh regen or bundler pip-audit.
 # matter-idl, py-utlx: Nordic mirror only (not on public PyPI).
-# Upstream sdist-only pins (e.g. cbor, docopt, wget) fail pypi-wheels until wheels exist.
-# Failing only nordic-wheels → mirror sync; only pypi-wheels → upstream wheels or pin change.
+# Pins in scripts/requirements-validate-sdist-ok.txt: versioned sdist OK via HTTP JSON/simple — no pip.
+# Failing only nordic-wheels → mirror sync / pip_requestor; only pypi-wheels → upstream wheels or pin change.
 name: Validate pip requirements-fixed.txt
 
 on:
@@ -16,6 +17,7 @@ on:
       - 'scripts/requirements-fixed.txt'
       - 'scripts/requirements*.txt'
       - 'scripts/validate_requirements_fixed_pins.py'
+      - 'scripts/requirements-validate-sdist-ok.txt'
       - '.github/workflows/validate-pip-requirements-fixed-file.yml'
 
 permissions:
